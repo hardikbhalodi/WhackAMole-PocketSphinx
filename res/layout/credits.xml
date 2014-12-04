@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:id="@+id/widget32"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:background="@drawable/background">
+
+	<TextView
+		android:text="Game released under GNU GPL v2 License by Lorenzo Lambertini
+ contact: lorenzo.lambertini@gmail.com"
+		android:id="@+id/TextView01" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:textSize="15px"
+		android:textStyle="bold" android:textColor="#000"></TextView>
+</RelativeLayout>
