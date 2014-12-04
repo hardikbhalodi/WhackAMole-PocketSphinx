@@ -2,7 +2,8 @@
 <RelativeLayout android:id="@+id/widget32"
 	android:layout_width="fill_parent" android:layout_height="fill_parent"
 	xmlns:android="http://schemas.android.com/apk/res/android"
-	android:background="@drawable/background">
+	android:background="@drawable/background"
+	android:orientation="horizontal">
 
 	<TextView
 		android:text="per giocare bisogna prendere la talpa nel momento in cui compare sulla buca,
