@@ -85,22 +85,20 @@ public class GameActivity extends Activity implements RecognitionListener {
         recognizer = defaultSetup()
                 .setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
                 .setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-                .setRawLogDir(assetsDir).setKeywordThreshold(1e-20f)
+                .setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate)
                 .getRecognizer();
         recognizer.addListener(this);
         // Create grammar-based searches.
-        //File wordsGrammar = new File(modelsDir, "grammar/words.gram");
-        //recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
+        // File wordsGrammar = new File(modelsDir, "grammar/words.gram");
+        // recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
+       
         // Create keyword-based searches.
-        File wordsKeyWord = new File(modelsDir, "words/corpus.txt");
+        File wordsKeyWord = new File(modelsDir, "words/kwords.txt");
         recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
         
     }
 	
 	private void startGame(){
-		//initialize recognizer
-        recognizer.startListening(WORD_SEARCH);
-        Log.v("text", "start");
 		// set up UI
         setContentView(R.layout.startgame);	
         scoreTview = (TextView) findViewById(R.id.Score);
@@ -111,9 +109,13 @@ public class GameActivity extends Activity implements RecognitionListener {
 		Update = new Handler();
 		im = new GraphicsMole(this);
 		gw.setAdapter(im);
+		gw.setEnabled(false);
 		
 		mg = new MoleGame(step);
 		mg.start();
+
+		//initialize recognizer
+        recognizer.startListening(WORD_SEARCH);
 	}
 	
 	public Activity getActivity(){
@@ -159,53 +161,66 @@ public class GameActivity extends Activity implements RecognitionListener {
 	@Override
 	public void onBeginningOfSpeech() {
 		// TODO Auto-generated method stub
-		Log.v(PS_TAG, "onBeginningOfSpeech()");
-	}
-
-	@Override
-	public void onPartialResult(Hypothesis hypothesis) {
-		// TODO Auto-generated method stub
-		Log.v(PS_TAG, "onPartialResult()");
-		if (hypothesis != null) {
-			recognizedText = hypothesis.getHypstr();
-			Log.v(PS_TAG, recognizedText);
-			recognizer.stop();
-		}
+		//Log.v(PS_TAG, "onBeginningOfSpeech()");
 	}
 
 	@Override
 	public void onEndOfSpeech() {
 		// TODO Auto-generated method stub
-		Log.v(PS_TAG, "onEndOfSpeech()");
+		//Log.v(PS_TAG, "onEndOfSpeech()");
 		recognizer.stop();
+	}
+
+
+	@Override
+	public void onPartialResult(Hypothesis hypothesis) {
+		// TODO Auto-generated method stub
+		if (hypothesis != null) {
+			recognizedText = hypothesis.getHypstr();
+
+			Log.v(PS_TAG, "onPartialResult(): "+recognizedText);
+			recognizer.stop();
+			
+			Update.post(new Runnable() {
+				@Override
+				public void run() {
+					if ((isMole == true && recognizedText.contains("mole")) || 
+						(isMole == false && recognizedText.contains("butterfly"))) {
+						scoreCurr = scoreCurr + 1;
+						scoreTview.setText("Score: " + scoreCurr);
+						scoreTview.refreshDrawableState();
+					} else {
+						lifeCurr = lifeCurr - 1;
+						lifeTview.setText("Life: " + lifeCurr);
+						lifeTview.refreshDrawableState();
+						if (lifeCurr == 0) {
+							mg.stopThread();
+							Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
+							startActivity(gameOverIntent);
+							finish();									
+						}
+					}
+				}
+			});
+		}
 	}
 
 	@Override
 	public void onResult(Hypothesis hypothesis) {
 		// TODO Auto-generated method stub
-		Log.v(PS_TAG, "onResult");
-		Log.v(PS_TAG, recognizedText + "," + isMole);
-		Update.post(new Runnable() {
-			@Override
-			public void run() {
-				if ((isMole == true && recognizedText.equals("mole")) || 
-					(isMole == false && recognizedText.equals("butterfly"))) {
-					scoreCurr = scoreCurr + 1;
-					scoreTview.setText("Score: " + scoreCurr);
-					scoreTview.refreshDrawableState();
-				} else {
-					lifeCurr = lifeCurr - 1;
-					lifeTview.setText("Life: " + lifeCurr);
-					lifeTview.refreshDrawableState();
-					if (lifeCurr == 0) {
-						mg.stopThread();
-						Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
-						startActivity(gameOverIntent);
-						finish();									
-					}
-				}
-			}
-		});
+		//Log.v(PS_TAG, "onResult");
+	}
+
+	@Override
+	public void onError(Exception arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onTimeout() {
+		// TODO Auto-generated method stub
+		//Log.v(PS_TAG,"onTimeout()");
 	}
 	
 }

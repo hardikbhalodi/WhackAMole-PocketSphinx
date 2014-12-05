@@ -11,4 +11,4 @@ models/hmm/en-us-semi/sendump
 models/hmm/en-us-semi/transition_matrices
 models/hmm/en-us-semi/variances
 models/lm/weather.dmp
-models/words/corpus.txt
+models/words/kwords.txt
