@@ -2,4 +2,4 @@
 
 grammar words;
 
-public <item> = apple|orange|banana; 
+public <item> = mole|butterfly; 

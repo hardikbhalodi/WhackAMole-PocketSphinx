@@ -27,6 +27,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	
 	private static SpeechRecognizer recognizer;
 	private static final String WORD_SEARCH = "words";
+	private static String recognizedText;
 	//game
 	static private GraphicsMole im;
 	static private int currentMolePos = -1;
@@ -88,8 +89,12 @@ public class GameActivity extends Activity implements RecognitionListener {
                 .getRecognizer();
         recognizer.addListener(this);
         // Create grammar-based searches.
-        File wordsGrammar = new File(modelsDir, "grammar/words.gram");
-        recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
+        //File wordsGrammar = new File(modelsDir, "grammar/words.gram");
+        //recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
+        // Create keyword-based searches.
+        File wordsKeyWord = new File(modelsDir, "words/corpus.txt");
+        recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
+        
     }
 	
 	private void startGame(){
@@ -148,13 +153,26 @@ public class GameActivity extends Activity implements RecognitionListener {
 		this.prob = prob;
 	}
 
+	
+	/* for speech recognition */
+	
 	@Override
 	public void onBeginningOfSpeech() {
 		// TODO Auto-generated method stub
 		Log.v(PS_TAG, "onBeginningOfSpeech()");
 	}
 
-	/* for speech recognition */
+	@Override
+	public void onPartialResult(Hypothesis hypothesis) {
+		// TODO Auto-generated method stub
+		Log.v(PS_TAG, "onPartialResult()");
+		if (hypothesis != null) {
+			recognizedText = hypothesis.getHypstr();
+			Log.v(PS_TAG, recognizedText);
+			recognizer.stop();
+		}
+	}
+
 	@Override
 	public void onEndOfSpeech() {
 		// TODO Auto-generated method stub
@@ -163,42 +181,31 @@ public class GameActivity extends Activity implements RecognitionListener {
 	}
 
 	@Override
-	public void onPartialResult(Hypothesis hypothesis) {
-		// TODO Auto-generated method stub
-		Log.v(PS_TAG, "onPartialResult()");
-	}
-
-	@Override
 	public void onResult(Hypothesis hypothesis) {
 		// TODO Auto-generated method stub
 		Log.v(PS_TAG, "onResult");
-		if (hypothesis != null) {
-			final String text = hypothesis.getHypstr();
-			Log.v(PS_TAG, text);
-			Update.post(new Runnable() {
-				@Override
-				public void run() {
-					if (isMole == true) {
-						scoreCurr = scoreCurr + 1;
-						scoreTview.setText("Score: " + scoreCurr);
-						scoreTview.refreshDrawableState();
-						
-					} else {
-						lifeCurr = lifeCurr - 1;
-						lifeTview.setText("Life: " + lifeCurr);
-						lifeTview.refreshDrawableState();
-						if (lifeCurr == 0) {
-							mg.stopThread();
-							recognizer.stop();
-							Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
-							startActivity(gameOverIntent);
-							finish();									
-						}
+		Log.v(PS_TAG, recognizedText + "," + isMole);
+		Update.post(new Runnable() {
+			@Override
+			public void run() {
+				if ((isMole == true && recognizedText.equals("mole")) || 
+					(isMole == false && recognizedText.equals("butterfly"))) {
+					scoreCurr = scoreCurr + 1;
+					scoreTview.setText("Score: " + scoreCurr);
+					scoreTview.refreshDrawableState();
+				} else {
+					lifeCurr = lifeCurr - 1;
+					lifeTview.setText("Life: " + lifeCurr);
+					lifeTview.refreshDrawableState();
+					if (lifeCurr == 0) {
+						mg.stopThread();
+						Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
+						startActivity(gameOverIntent);
+						finish();									
 					}
-	
 				}
-			});
-		}
+			}
+		});
 	}
 	
 }
