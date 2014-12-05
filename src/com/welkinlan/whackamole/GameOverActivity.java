@@ -20,9 +20,8 @@ public class GameOverActivity extends Activity {
         RestartGameButton.setOnClickListener(new OnClickListener() {
         	
         	public void onClick(View v) {
-        		Intent RestartGameIntent = new Intent(GameOverActivity.this,Menu.class);
+        		Intent RestartGameIntent = new Intent(GameOverActivity.this,GameActivity.class);
         		startActivity(RestartGameIntent);
-        	
         	}
         });
         
@@ -32,8 +31,6 @@ public class GameOverActivity extends Activity {
         	public void onClick(View v) {
         		int pid = android.os.Process.myPid();
         		android.os.Process.killProcess(pid);
-        		//mg.getActivity().moveTaskToBack(true);
-        	//	android.os.Process.sendSignal(pid, 3);
         		
         	}
         });

@@ -11,4 +11,6 @@
     <string name="digits_caption">Let\'s recognize some digits: say something like \"one two three four five\".</string>
     <string name="forecast_caption">Say something typical to a weather forecast like \"sunny spells on Wednesday\".</string>
     <string name="word_caption">Say banana orange apple.</string>
+    
+    <string name="loading_message">Loading \.\.\.</string>
 </resources>

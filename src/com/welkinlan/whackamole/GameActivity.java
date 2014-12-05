@@ -49,7 +49,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		setContentView(R.layout.activity_screen_loader);
+		setContentView(R.layout.loading);
 		
 		new AsyncTask<Void, Void, Exception>() {
             @Override
@@ -70,7 +70,7 @@ public class GameActivity extends Activity implements RecognitionListener {
                 	Toast.makeText(getApplicationContext(), "Failed to init recognizer " + result,
                 			   Toast.LENGTH_LONG).show();
                 	finish();  
-                	Intent backToMenu = new Intent(GameActivity.this, Menu.class);
+                	Intent backToMenu = new Intent(GameActivity.this, MenuActivity.class);
             		startActivity(backToMenu);
                 } else { 	
             		startGame();
@@ -100,7 +100,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	
 	private void startGame(){
 		// set up UI
-        setContentView(R.layout.startgame);	
+        setContentView(R.layout.game);	
         scoreTview = (TextView) findViewById(R.id.Score);
 		lifeTview = (TextView) findViewById(R.id.Life);
 		gw = (GridView) findViewById(R.id.gridview);

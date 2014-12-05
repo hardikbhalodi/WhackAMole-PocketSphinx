@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:background="@drawable/sfondo" 
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent" android:screenOrientation="landscape">
+	
+	<GridView android:id="@+id/gridview" android:numColumns="3"
+		android:verticalSpacing="0px" android:horizontalSpacing="0px"
+		android:stretchMode="columnWidth" android:gravity="center"
+		android:layout_width="fill_parent" android:layout_height="wrap_content">
+	</GridView>
+	
+	
+	<TextView android:id="@+id/Score" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="@string/Score"
+		android:textColor="#FF0000" 
+		android:textStyle="bold" 
+		android:textSize="30sp"
+		android:gravity="center">
+
+	</TextView>
+	<TextView android:id="@+id/Life" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:text="@string/Life"
+		android:textColor="#FF0000"
+		android:textSize="30sp" 
+		android:textStyle="bold"
+		android:gravity="center">
+		
+	</TextView>
+	
+
+</LinearLayout> 
+    
