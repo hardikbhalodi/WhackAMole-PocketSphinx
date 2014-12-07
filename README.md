@@ -1,4 +1,4 @@
 WhackAMole-PocketSphix
 ======================
 
-Use youe speech to whack a mole!
+Use your speech to whack a mole!
