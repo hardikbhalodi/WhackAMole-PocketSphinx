@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,12 +34,12 @@ public class GameActivity extends Activity implements RecognitionListener {
 	static private int currentMolePos = -1;
 	private int scoreCurr = 0;
 	private int lifeCurr = 5;
-	private Handler step;
-	private Handler Update;
+	private static Handler stepHandler;
+	private static Handler updateHandler;
 	private MoleGame mg;
 	static private boolean isMole = true;
 	static private Mole mole = new Mole();
-	static private double prob=0.7;
+	static private double prob=0.5;
     //UI
 	TextView scoreTview;
 	TextView lifeTview;
@@ -80,12 +81,13 @@ public class GameActivity extends Activity implements RecognitionListener {
 		
 	}
 
+
 	private void setupRecognizer(File assetsDir) {
         File modelsDir = new File(assetsDir, "models");
         recognizer = defaultSetup()
                 .setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
                 .setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-                .setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate)
+                .setRawLogDir(assetsDir).setKeywordThreshold(1e-15f) //threshold (larger = more accurate)
                 .getRecognizer();
         recognizer.addListener(this);
         // Create grammar-based searches.
@@ -97,6 +99,7 @@ public class GameActivity extends Activity implements RecognitionListener {
         recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
         
     }
+
 	
 	private void startGame(){
 		// set up UI
@@ -105,13 +108,13 @@ public class GameActivity extends Activity implements RecognitionListener {
 		lifeTview = (TextView) findViewById(R.id.Life);
 		gw = (GridView) findViewById(R.id.gridview);
 		//set up game
-		step = new ChangeImage();
-		Update = new Handler();
+		stepHandler = new ChangeImage();
+		updateHandler = new Handler();
 		im = new GraphicsMole(this);
 		gw.setAdapter(im);
 		gw.setEnabled(false);
 		
-		mg = new MoleGame(step);
+		mg = new MoleGame(stepHandler);
 		mg.start();
 
 		//initialize recognizer
@@ -121,6 +124,19 @@ public class GameActivity extends Activity implements RecognitionListener {
 	public Activity getActivity(){
 		return this.getActivity();
 	}
+	
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case android.R.id.home:	
+			recognizer.stop();
+			mg.stopThread();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+	
 
 	// ---------------------------
 	private static class ChangeImage extends Handler {
@@ -130,6 +146,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 		@Override
 		public void handleMessage(Message msg) {
+			recognizer.stop();
 			Bundle bundle = msg.getData();
 			
 			currentMolePos = bundle.getInt("newPosition");
@@ -181,11 +198,11 @@ public class GameActivity extends Activity implements RecognitionListener {
 			Log.v(PS_TAG, "onPartialResult(): "+recognizedText);
 			recognizer.stop();
 			
-			Update.post(new Runnable() {
+			updateHandler.post(new Runnable() {
 				@Override
 				public void run() {
 					if ((isMole == true && recognizedText.contains("mole")) || 
-						(isMole == false && recognizedText.contains("butterfly"))) {
+						(isMole == false && recognizedText.contains("fly"))) {
 						scoreCurr = scoreCurr + 1;
 						scoreTview.setText("Score: " + scoreCurr);
 						scoreTview.refreshDrawableState();
@@ -214,7 +231,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	@Override
 	public void onError(Exception arg0) {
 		// TODO Auto-generated method stub
-		
+		recognizer.removeListener(this);
 	}
 
 	@Override
@@ -234,7 +251,7 @@ gw.setOnItemClickListener(new OnItemClickListener() {
 	public void onItemClick(AdapterView<?> parent, final View v,
 			int position, long id) {
 		if (currentMolePos == position) {
-			Update.post(new Runnable() {
+			updateHandler.post(new Runnable() {
 				@Override
 				public void run() {
 					if (isMole == true) {
