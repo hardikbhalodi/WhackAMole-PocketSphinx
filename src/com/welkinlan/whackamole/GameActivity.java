@@ -38,6 +38,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	private static Handler updateHandler;
 	private MoleGame mg;
 	static private boolean isMole = true;
+	static private boolean isThisMole = true;
 	static private Mole mole = new Mole();
 	static private double prob=0.5;
     //UI
@@ -87,7 +88,7 @@ public class GameActivity extends Activity implements RecognitionListener {
         recognizer = defaultSetup()
                 .setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
                 .setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-                .setRawLogDir(assetsDir).setKeywordThreshold(1e-15f) //threshold (larger = more accurate)
+                .setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate)
                 .getRecognizer();
         recognizer.addListener(this);
         // Create grammar-based searches.
@@ -117,8 +118,6 @@ public class GameActivity extends Activity implements RecognitionListener {
 		mg = new MoleGame(stepHandler);
 		mg.start();
 
-		//initialize recognizer
-        recognizer.startListening(WORD_SEARCH);
 	}
 	
 	public Activity getActivity(){
@@ -146,7 +145,6 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 		@Override
 		public void handleMessage(Message msg) {
-			recognizer.stop();
 			Bundle bundle = msg.getData();
 			
 			currentMolePos = bundle.getInt("newPosition");
@@ -164,6 +162,8 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 			oldPosition = currentMolePos;
 			im.notifyDataSetChanged();
+			//stop current recognition and start a new one
+			recognizer.stop();
 			recognizer.startListening(WORD_SEARCH);
 		}
 	}
@@ -179,13 +179,13 @@ public class GameActivity extends Activity implements RecognitionListener {
 	public void onBeginningOfSpeech() {
 		// TODO Auto-generated method stub
 		//Log.v(PS_TAG, "onBeginningOfSpeech()");
+		isThisMole = isMole;
 	}
 
 	@Override
 	public void onEndOfSpeech() {
 		// TODO Auto-generated method stub
 		//Log.v(PS_TAG, "onEndOfSpeech()");
-		recognizer.stop();
 	}
 
 
@@ -194,15 +194,14 @@ public class GameActivity extends Activity implements RecognitionListener {
 		// TODO Auto-generated method stub
 		if (hypothesis != null) {
 			recognizedText = hypothesis.getHypstr();
-
-			Log.v(PS_TAG, "onPartialResult(): "+recognizedText);
 			recognizer.stop();
-			
+			Log.v(PS_TAG, "onPartialResult(): "+recognizedText);
+			//update UI
 			updateHandler.post(new Runnable() {
 				@Override
 				public void run() {
-					if ((isMole == true && recognizedText.contains("mole")) || 
-						(isMole == false && recognizedText.contains("fly"))) {
+					if ((isThisMole == true && recognizedText.contains("mole")) || 
+						(isThisMole == false && recognizedText.contains("fly"))) {
 						scoreCurr = scoreCurr + 1;
 						scoreTview.setText("Score: " + scoreCurr);
 						scoreTview.refreshDrawableState();
@@ -225,7 +224,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	@Override
 	public void onResult(Hypothesis hypothesis) {
 		// TODO Auto-generated method stub
-		//Log.v(PS_TAG, "onResult");
+		Log.v(PS_TAG, "onResult");
 	}
 
 	@Override
@@ -238,6 +237,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	public void onTimeout() {
 		// TODO Auto-generated method stub
 		//Log.v(PS_TAG,"onTimeout()");
+		recognizer.removeListener(this);
 	}
 	
 }
