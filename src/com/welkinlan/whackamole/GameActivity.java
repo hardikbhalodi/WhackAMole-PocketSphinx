@@ -4,127 +4,168 @@ import static edu.cmu.pocketsphinx.SpeechRecognizerSetup.defaultSetup;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
-import com.welkinlan.whackamole.R;
+import com.welkinlan.util.TurnAnimation;
 
 import edu.cmu.pocketsphinx.Assets;
 import edu.cmu.pocketsphinx.Hypothesis;
 import edu.cmu.pocketsphinx.RecognitionListener;
 import edu.cmu.pocketsphinx.SpeechRecognizer;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.ScaleAnimation;
+import android.widget.BaseAdapter;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class GameActivity extends Activity implements RecognitionListener {
 	private static final String PS_TAG = "PocketSphinx";
-	
+
+	private static Object lock = new Object();
 	private static SpeechRecognizer recognizer;
 	private static final String WORD_SEARCH = "words";
 	private static String recognizedText;
 	//game
-	static private GraphicsMole im;
-	static private int currentMolePos = -1;
 	private int scoreCurr = 0;
 	private int lifeCurr = 5;
 	private static Handler stepHandler;
 	private static Handler updateHandler;
 	private MoleGame mg;
-	static private boolean isMole = true;
-	static private boolean isThisMole = true;
-	static private Mole mole = new Mole();
-	static private double prob=0.5;
-    //UI
+	//UI
 	TextView scoreTview;
 	TextView lifeTview;
-	GridView gw;
-	
-	
+	static GridView gw;
+	//for image adapter
+	private static String[] image_names = {"Baby.png","Back.png","Ballerina.png","Baking.png", "Banana.png","Chair.png"};
+	static int current_position = -1;
+	static int holeImage = R.drawable.question;
+	private static View currentView, previousView;
+
+	//Variables for animation
+	private Animation alphaAnimation;
+	private Animation scaleAnimation;
+	private AnimationSet set;
+	Animation flashAnimation;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
-		setContentView(R.layout.loading);
-		
-		new AsyncTask<Void, Void, Exception>() {
-            @Override
-            protected Exception doInBackground(Void... params) {
-                try {
-                    Assets assets = new Assets(GameActivity.this);
-                    File assetDir = assets.syncAssets();
-                    setupRecognizer(assetDir);
-                } catch (IOException e) {
-                    return e;
-                }
-                return null;
-            }
 
-            @Override
-            protected void onPostExecute(Exception result) {
-                if (result != null) {
-                	Toast.makeText(getApplicationContext(), "Failed to init recognizer " + result,
-                			   Toast.LENGTH_LONG).show();
-                	finish();  
-                	Intent backToMenu = new Intent(GameActivity.this, MenuActivity.class);
-            		startActivity(backToMenu);
-                } else { 	
-            		startGame();
-                }
-            }
-        }.execute();
-		
+		setContentView(R.layout.loading);
+
+		new AsyncTask<Void, Void, Exception>() {
+			@Override
+			protected Exception doInBackground(Void... params) {
+				try {
+					Assets assets = new Assets(GameActivity.this);
+					File assetDir = assets.syncAssets();
+					setupRecognizer(assetDir);
+				} catch (IOException e) {
+					return e;
+				}
+				return null;
+			}
+
+			@Override
+			protected void onPostExecute(Exception result) {
+				if (result != null) {
+					Toast.makeText(getApplicationContext(), "Failed to init recognizer " + result,
+							Toast.LENGTH_LONG).show();
+					finish();  
+					Intent backToMenu = new Intent(GameActivity.this, MenuActivity.class);
+					startActivity(backToMenu);
+				} else { 	
+					startGame();
+				}
+			}
+		}.execute();
+
 	}
 
 
 	private void setupRecognizer(File assetsDir) {
-        File modelsDir = new File(assetsDir, "models");
-        recognizer = defaultSetup()
-                .setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
-                .setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-                .setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate)
-                .getRecognizer();
-        recognizer.addListener(this);
-        // Create grammar-based searches.
-        // File wordsGrammar = new File(modelsDir, "grammar/words.gram");
-        // recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
-       
-        // Create keyword-based searches.
-        File wordsKeyWord = new File(modelsDir, "words/kwords.txt");
-        recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
-        
-    }
+		File modelsDir = new File(assetsDir, "models");
+		recognizer = defaultSetup()
+				.setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
+				.setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
+				.setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate)
+				.getRecognizer();
+		recognizer.addListener(this);
+		// Create grammar-based searches.
+		// File wordsGrammar = new File(modelsDir, "grammar/words.gram");
+		// recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
 
-	
+		// Create keyword-based searches.
+		File wordsKeyWord = new File(modelsDir, "words/kwords.txt");
+		recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
+
+	}
+
 	private void startGame(){
 		// set up UI
-        setContentView(R.layout.game);	
-        scoreTview = (TextView) findViewById(R.id.Score);
+		setContentView(R.layout.activity_game);	
+		scoreTview = (TextView) findViewById(R.id.Score);
 		lifeTview = (TextView) findViewById(R.id.Life);
-		gw = (GridView) findViewById(R.id.gridview);
+		gw = (GridView) findViewById(R.id.game_view);
 		//set up game
-		stepHandler = new ChangeImage();
+		stepHandler = new ChangeImage(this);
 		updateHandler = new Handler();
-		im = new GraphicsMole(this);
-		gw.setAdapter(im);
+		gw.setAdapter(new ImageAdapter(this));
 		gw.setEnabled(false);
-		
+		setAnimation();
+
 		mg = new MoleGame(stepHandler);
 		mg.start();
 
 	}
 	
+	public void setAnimation() {
+		flashAnimation = new AlphaAnimation(1, 0);
+	    flashAnimation.setDuration(400);
+	    flashAnimation.setInterpolator(new LinearInterpolator());
+	    flashAnimation.setRepeatCount(Animation.INFINITE);
+	    flashAnimation.setRepeatMode(Animation.REVERSE); 
+		
+		scaleAnimation = new ScaleAnimation(0.1f, 1.0f, 0.1f, 1.0f,
+				Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
+				0.5f);
+		alphaAnimation = new AlphaAnimation(0.1f, 11f);
+		set = new AnimationSet(true);
+		set.addAnimation(scaleAnimation);
+		set.addAnimation(alphaAnimation);
+		set.setDuration(300);
+		//set.setFillEnabled(true);
+		//set.setFillAfter(true);
+	}
+
+
 	public Activity getActivity(){
 		return this.getActivity();
 	}
-	
-	
+
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
@@ -135,51 +176,68 @@ public class GameActivity extends Activity implements RecognitionListener {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-	
+
 
 	// ---------------------------
 	private static class ChangeImage extends Handler {
+		Context context;
 		
-		Hole hole = new Hole();
-		private int oldPosition = -1;
-
+		public ChangeImage(Context pContext){
+			context = pContext;
+		}
+		
 		@Override
 		public void handleMessage(Message msg) {
 			Bundle bundle = msg.getData();
+			ImageView image;
+			TextView text;
+			//restore the previous one
+			if (current_position!=-1){
+				previousView = gw.getChildAt(current_position);
+				image = (ImageView) previousView.findViewById(R.id.icon);
+				text = (TextView) previousView.findViewById(R.id.text);
+				image.setImageResource(holeImage);
+				text.setVisibility(View.GONE);
+				ImageView checkImage = (ImageView) currentView.findViewById(R.id.match);
+				checkImage.setVisibility(View.INVISIBLE);
+			}
+			//update the current one
+			synchronized (lock) {
+				current_position = bundle.getInt("newPosition");
+				currentView = gw.getChildAt(current_position);
+				applyTurnRotation(current_position, 0, 180, context);
+				//stop current recognition and start a new one
+				recognizer.stop();
+				recognizer.startListening(WORD_SEARCH);
+			}
 			
-			currentMolePos = bundle.getInt("newPosition");
-			if (Math.random() < prob) {
-				im.setItem(currentMolePos, mole.getMole());
-				isMole = true;
-			} else {
-				im.setItem(currentMolePos, mole.getButterfly());
-				isMole = false;
-			}
+			/* without animation
+			//show the mole
+			image = (ImageView) currentView.findViewById(R.id.icon);
+			text = (TextView) currentView.findViewById(R.id.text);
+			text.setVisibility(View.VISIBLE);
 
-			if (oldPosition != -1 && currentMolePos != oldPosition) {
-				im.setItem(oldPosition, hole.getHole());
+			InputStream in = null;
+			try {
+				in = context.getAssets().open("img/" + image_names[current_position]);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-
-			oldPosition = currentMolePos;
-			im.notifyDataSetChanged();
-			//stop current recognition and start a new one
-			recognizer.stop();
-			recognizer.startListening(WORD_SEARCH);
+			final Bitmap bitmap = BitmapFactory.decodeStream(in);
+			// Display image and text
+			image.setImageBitmap(bitmap);
+			text.setText(image_names[current_position].split("\\.")[0].toString().toLowerCase());
+			*/
 		}
 	}
 	
-	public void setProbability(double prob){
-		this.prob = prob;
-	}
 
-	
 	/* for speech recognition */
-	
 	@Override
 	public void onBeginningOfSpeech() {
 		// TODO Auto-generated method stub
 		//Log.v(PS_TAG, "onBeginningOfSpeech()");
-		isThisMole = isMole;
 	}
 
 	@Override
@@ -193,38 +251,46 @@ public class GameActivity extends Activity implements RecognitionListener {
 	public void onPartialResult(Hypothesis hypothesis) {
 		// TODO Auto-generated method stub
 		if (hypothesis != null) {
-			recognizedText = hypothesis.getHypstr();
-			recognizer.stop();
-			Log.v(PS_TAG, "onPartialResult(): "+recognizedText);
-			//update UI
-			updateHandler.post(new Runnable() {
-				@Override
-				public void run() {
-					if ((isThisMole == true && recognizedText.contains("mole")) || 
-						(isThisMole == false && recognizedText.contains("fly"))) {
-						scoreCurr = scoreCurr + 1;
-						scoreTview.setText("Score: " + scoreCurr);
-						scoreTview.refreshDrawableState();
-					} else {
-						lifeCurr = lifeCurr - 1;
-						lifeTview.setText("Life: " + lifeCurr);
-						lifeTview.refreshDrawableState();
-						if (lifeCurr == 0) {
-							mg.stopThread();
-							Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
-							startActivity(gameOverIntent);
-							finish();									
+			synchronized (lock) {
+				recognizedText = hypothesis.getHypstr();
+				recognizer.stop();
+				//update UI
+				updateHandler.post(new Runnable() {
+					@Override
+					public void run() {
+						String curImageName = image_names[current_position].split("\\.")[0].toString().toLowerCase();
+						Log.v(PS_TAG, "onPartialResult(): "+recognizedText+" vs. "+curImageName);
+						//if correct
+						if (curImageName.contains(recognizedText)) {
+							scoreCurr++;
+							scoreTview.setText("Score: " + scoreCurr);
+							scoreTview.refreshDrawableState();
+							//show check mark for correct utterance
+							ImageView checkImage = (ImageView) currentView.findViewById(R.id.match);
+							checkImage.setVisibility(View.VISIBLE);
+							checkImage.startAnimation(set);
+						} else {
+							//change game data
+							lifeCurr--;
+							lifeTview.setText("Life: " + lifeCurr);
+							lifeTview.refreshDrawableState();
+							if (lifeCurr == 0) {
+								mg.stopThread();
+								Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
+								startActivity(gameOverIntent);
+								finish();									
+							}
 						}
 					}
-				}
-			});
+				});
+			}
 		}
 	}
 
 	@Override
 	public void onResult(Hypothesis hypothesis) {
 		// TODO Auto-generated method stub
-		Log.v(PS_TAG, "onResult");
+		//Log.v(PS_TAG, "onResult");
 	}
 
 	@Override
@@ -240,6 +306,135 @@ public class GameActivity extends Activity implements RecognitionListener {
 		recognizer.removeListener(this);
 	}
 	
+
+	static class ImageAdapter extends BaseAdapter {
+		private Context mContext;
+
+		public ImageAdapter(Context context) {
+			this.mContext = context;
+		}
+
+		@Override
+		public int getCount() {
+			return image_names.length;
+		}
+
+		@Override
+		public Object getItem(int position) {
+			return image_names[position];
+		}
+
+		@Override
+		public long getItemId(int position) {
+			return position;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			if (convertView == null) {
+				convertView = LayoutInflater.from(mContext).inflate(
+						R.layout.text_image_layout, null);
+			}
+			return convertView;
+		}
+	}
+	
+
+	// For the turn image animation
+	private static void applyTurnRotation(int position, float start, float end, Context context) {
+		final float centerX = currentView.getWidth() / 2.0f;
+		final float centerY = currentView.getHeight() / 2.0f;
+
+		// Create a new 3D rotation with the supplied parameter
+		// The animation listener is used to trigger the next animation
+		final TurnAnimation rotation = new TurnAnimation(start, end, centerX,
+				centerY, 310.0f, true);
+		rotation.setDuration(300);
+		rotation.setFillAfter(true);
+		rotation.setInterpolator(new AccelerateInterpolator());
+		rotation.setAnimationListener(new DisplayNextView(position, context));
+		currentView.startAnimation(rotation);
+	}
+
+	/**
+	 * This class listens for the end of the first half of the animation. It
+	 * then posts a new action that effectively swaps the views when the
+	 * container is rotated 90 degrees and thus invisible.
+	 */
+	private static final class DisplayNextView implements Animation.AnimationListener {
+		private final int mPosition;
+		private final Context mContext;
+		
+		private DisplayNextView(int position, Context context) {
+			mPosition = position;
+			mContext = context;
+		}
+
+		public void onAnimationStart(Animation animation) {
+		}
+
+		public void onAnimationEnd(Animation animation) {
+			currentView.post(new SwapViews(mPosition, mContext));
+		}
+
+		public void onAnimationRepeat(Animation animation) {
+		}
+	}
+
+	/**
+	 * This class is responsible for swapping the views and start the second
+	 * half of the animation.
+	 */
+	@SuppressLint("DefaultLocale")
+	private static final class SwapViews implements Runnable {
+		private final int mPosition;
+		private final Context mContext;;
+
+		public SwapViews(int position, Context context) {
+			mPosition = position;
+			mContext = context;
+		}
+
+		@SuppressLint("DefaultLocale")
+		public void run() {
+			ImageView image = (ImageView) currentView.findViewById(R.id.icon);
+			TextView text = (TextView) currentView.findViewById(R.id.text);
+			text.setVisibility(View.VISIBLE);
+
+			InputStream in = null;
+			// Log.i("filename", "img/"+image_names[mPosition]);
+			String name = image_names[mPosition];
+			StringBuilder sb = new StringBuilder(name);
+			char c = sb.charAt(0);
+			if (Character.isLowerCase(c)) {
+				sb.setCharAt(0, Character.toUpperCase(c));
+				Log.i("new_name", sb.toString());
+			}
+			try {
+				in = mContext.getAssets().open("img/" + sb.toString());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			final Bitmap bitmap = BitmapFactory.decodeStream(in);
+			// Display image and text
+			image.setImageBitmap(bitmap);
+			text.setText(image_names[mPosition].split("\\.")[0].toString()
+					.toLowerCase());
+
+			final float centerX = currentView.getWidth() / 2.0f;
+			final float centerY = currentView.getHeight() / 2.0f;
+			TurnAnimation rotation;
+			rotation = new TurnAnimation(180, 0, centerX, centerY, 310.0f,
+					false);
+			rotation.setDuration(300);
+			rotation.setFillAfter(true);
+			rotation.setInterpolator(new DecelerateInterpolator());
+			currentView.startAnimation(rotation);
+		}
+	}
+
+
 }
 
 
@@ -258,30 +453,30 @@ gw.setOnItemClickListener(new OnItemClickListener() {
 						scoreCurr = scoreCurr + 1;
 						scoreTview.setText("Score: " + scoreCurr);
 						scoreTview.refreshDrawableState();
-						
+
 						// adaptive difficulty 
 						if(scoreCurr==20){
 							setProbability(0.60);
 							mg.setTimeToWait(700);
-							
+
 						}
 						else if(scoreCurr==50){
 							setProbability(0.45);
 							mg.setTimeToWait(500);
 						}
-						
+
 					} else {
 						lifeCurr = lifeCurr - 1;
 						lifeTview.setText("Life: " + lifeCurr);
 						lifeTview.refreshDrawableState();
 						if (lifeCurr == 0) {
 							mg.stopThread();
-							
+
 							Intent gameOverIntent = new Intent(
 									Slt.this, GameOver.class);
 							startActivity(gameOverIntent);
 							finish();
-															
+
 						}
 					}
 
@@ -291,4 +486,4 @@ gw.setOnItemClickListener(new OnItemClickListener() {
 	}
 });
 
-*/
+ */
