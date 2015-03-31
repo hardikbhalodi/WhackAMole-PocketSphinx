@@ -27,11 +27,9 @@ public class GameOverActivity extends Activity {
         
         Button QuitButton = (Button)findViewById(R.id.quit);
         QuitButton.setOnClickListener(new OnClickListener() {
-        	
         	public void onClick(View v) {
         		int pid = android.os.Process.myPid();
         		android.os.Process.killProcess(pid);
-        		
         	}
         });
               

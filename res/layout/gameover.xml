@@ -1,12 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout android:id="@+id/widget32"
-	android:layout_width="fill_parent" android:layout_height="fill_parent"
-	android:background="@drawable/blue_bg" xmlns:android="http://schemas.android.com/apk/res/android"
-	android:screenOrientation="landscape">
-	<Button android:layout_height="wrap_content"
-		android:layout_width="wrap_content" android:layout_alignParentBottom="true"
-		android:id="@+id/restart" android:background="@drawable/restart" android:layout_alignParentLeft="false"></Button>
-	<Button android:layout_height="wrap_content"
-		android:layout_width="wrap_content" android:layout_alignParentRight="true"
-		android:layout_alignParentBottom="true" android:id="@+id/quit" android:background="@drawable/quit"></Button>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget32"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@drawable/blue_bg"
+    android:screenOrientation="landscape" >
+
+    <TableLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true" >
+
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/textView1"
+                android:layout_width="200sp"
+                android:layout_height="wrap_content"
+                android:text="Try again"
+                android:textColor="@android:color/white"
+                android:textSize="40sp" />
+
+            <Button
+                android:id="@+id/restart"
+                android:layout_width="100sp"
+                android:layout_height="100sp"
+                android:background="@drawable/restart" />
+
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/tableRow3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+             <TextView
+                android:id="@+id/textView0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="80sp" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/TextView01"
+                android:layout_width="200sp"
+                android:layout_height="wrap_content"
+                android:text="Quit"
+                android:textColor="@android:color/white"
+                android:textSize="40sp" />
+
+            <Button
+                android:id="@+id/quit"
+                android:layout_width="100sp"
+                android:layout_height="100sp"
+                android:background="@drawable/quit"
+                android:textSize="40sp" />
+        </TableRow>
+
+    </TableLayout>
+
 </RelativeLayout>

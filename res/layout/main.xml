@@ -6,20 +6,13 @@
     android:background="@drawable/blue_bg"
     android:screenOrientation="landscape" >
 
-    <LinearLayout
-        android:id="@+id/widget28"
-        android:layout_width="295dp"
-        android:layout_height="300dp"
+    <Button
+        android:id="@+id/StartGame"
+        android:layout_width="400sp"
+        android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
-        android:orientation="vertical" >
-
-        <Button
-            android:id="@+id/StartGame"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/startgame_button" >
-        </Button>
-    </LinearLayout>
+        android:text="Start Game"
+        android:textSize="40sp" />
 
 </RelativeLayout>

@@ -72,9 +72,10 @@ public class GameActivity extends Activity implements RecognitionListener {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
 		setContentView(R.layout.loading);
-
+	}
+	
+	public void setupRecognizerTask(){
 		new AsyncTask<Void, Void, Exception>() {
 			@Override
 			protected Exception doInBackground(Void... params) {
@@ -102,6 +103,33 @@ public class GameActivity extends Activity implements RecognitionListener {
 			}
 		}.execute();
 
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();  // Always call the superclass method first
+		if (recognizer!=null){
+	    	recognizer.stop();
+		}	
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();  // Always call the superclass method first
+		if (recognizer==null){
+			setupRecognizerTask();
+		}
+		else{
+			recognizer.stop();
+			recognizer.startListening(WORD_SEARCH);
+		}
+	}
+	
+	@Override
+	protected void onStop() {
+	    super.onStop();  // Always call the superclass method first
+	    recognizer = null;
+	    mg.stopThread();
 	}
 
 
@@ -142,12 +170,11 @@ public class GameActivity extends Activity implements RecognitionListener {
 	}
 	
 	public void setAnimation() {
-		flashAnimation = new AlphaAnimation(1, 0);
-	    flashAnimation.setDuration(400);
-	    flashAnimation.setInterpolator(new LinearInterpolator());
-	    flashAnimation.setRepeatCount(Animation.INFINITE);
-	    flashAnimation.setRepeatMode(Animation.REVERSE); 
-		
+//		flashAnimation = new AlphaAnimation(1, 0);
+//	    flashAnimation.setDuration(400);
+//	    flashAnimation.setInterpolator(new LinearInterpolator());
+//	    flashAnimation.setRepeatCount(Animation.INFINITE);
+//	    flashAnimation.setRepeatMode(Animation.REVERSE); 
 		scaleAnimation = new ScaleAnimation(0.1f, 1.0f, 0.1f, 1.0f,
 				Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
 				0.5f);
@@ -155,7 +182,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 		set = new AnimationSet(true);
 		set.addAnimation(scaleAnimation);
 		set.addAnimation(alphaAnimation);
-		set.setDuration(300);
+		set.setDuration(200);
 		//set.setFillEnabled(true);
 		//set.setFillAfter(true);
 	}
@@ -169,10 +196,12 @@ public class GameActivity extends Activity implements RecognitionListener {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-		case android.R.id.home:	
-			recognizer.stop();
-			mg.stopThread();
-			return true;
+			case android.R.id.home:	
+				recognizer.stop();
+				mg.stopThread();
+				int pid = android.os.Process.myPid();
+	    		android.os.Process.killProcess(pid);
+				return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -198,8 +227,10 @@ public class GameActivity extends Activity implements RecognitionListener {
 				text = (TextView) previousView.findViewById(R.id.text);
 				image.setImageResource(holeImage);
 				text.setVisibility(View.GONE);
-				ImageView checkImage = (ImageView) currentView.findViewById(R.id.match);
+				ImageView checkImage = (ImageView) currentView.findViewById(R.id.check);
 				checkImage.setVisibility(View.INVISIBLE);
+				ImageView crossImage = (ImageView) currentView.findViewById(R.id.cross);
+				crossImage.setVisibility(View.INVISIBLE);
 			}
 			//update the current one
 			synchronized (lock) {
@@ -252,25 +283,31 @@ public class GameActivity extends Activity implements RecognitionListener {
 		// TODO Auto-generated method stub
 		if (hypothesis != null) {
 			synchronized (lock) {
-				recognizedText = hypothesis.getHypstr();
+				recognizedText = hypothesis.getHypstr().toLowerCase().trim();
 				recognizer.stop();
 				//update UI
 				updateHandler.post(new Runnable() {
 					@Override
 					public void run() {
-						String curImageName = image_names[current_position].split("\\.")[0].toString().toLowerCase();
-						Log.v(PS_TAG, "onPartialResult(): "+recognizedText+" vs. "+curImageName);
+						String curImageName = image_names[current_position].split("\\.")[0].toString().toLowerCase().trim();
+						Log.v(PS_TAG, "onPartialResult(): "+recognizedText+" vs. "+curImageName+" :"+curImageName.equals(recognizedText));
+						ImageView crossImage = (ImageView) currentView.findViewById(R.id.cross);
+						ImageView checkImage = (ImageView) currentView.findViewById(R.id.check);
 						//if correct
-						if (curImageName.contains(recognizedText)) {
+						if (recognizedText.equals(curImageName)) {
 							scoreCurr++;
 							scoreTview.setText("Score: " + scoreCurr);
 							scoreTview.refreshDrawableState();
 							//show check mark for correct utterance
-							ImageView checkImage = (ImageView) currentView.findViewById(R.id.match);
+							crossImage.setVisibility(View.INVISIBLE);
 							checkImage.setVisibility(View.VISIBLE);
 							checkImage.startAnimation(set);
 						} else {
 							//change game data
+							//show check mark for correct utterance
+							checkImage.setVisibility(View.INVISIBLE);
+							crossImage.setVisibility(View.VISIBLE);
+							crossImage.startAnimation(set);
 							lifeCurr--;
 							lifeTview.setText("Life: " + lifeCurr);
 							lifeTview.refreshDrawableState();
@@ -349,7 +386,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 		// The animation listener is used to trigger the next animation
 		final TurnAnimation rotation = new TurnAnimation(start, end, centerX,
 				centerY, 310.0f, true);
-		rotation.setDuration(300);
+		rotation.setDuration(200);
 		rotation.setFillAfter(true);
 		rotation.setInterpolator(new AccelerateInterpolator());
 		rotation.setAnimationListener(new DisplayNextView(position, context));
@@ -427,7 +464,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 			TurnAnimation rotation;
 			rotation = new TurnAnimation(180, 0, centerX, centerY, 310.0f,
 					false);
-			rotation.setDuration(300);
+			rotation.setDuration(200);
 			rotation.setFillAfter(true);
 			rotation.setInterpolator(new DecelerateInterpolator());
 			currentView.startAnimation(rotation);
