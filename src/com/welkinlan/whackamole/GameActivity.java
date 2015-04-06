@@ -138,7 +138,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 		recognizer = defaultSetup()
 				.setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
 				.setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-				.setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate)
+				.setRawLogDir(assetsDir).setKeywordThreshold(1e-15f) //threshold (larger = more accurate, fewer false alarms)
 				.getRecognizer();
 		recognizer.addListener(this);
 		// Create grammar-based searches.
@@ -207,7 +207,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	}
 
 
-	// ---------------------------
+	// new image handler
 	private static class ChangeImage extends Handler {
 		Context context;
 		
@@ -220,6 +220,8 @@ public class GameActivity extends Activity implements RecognitionListener {
 			Bundle bundle = msg.getData();
 			ImageView image;
 			TextView text;
+			//stop the previous recognition
+			if (recognizer!=null) recognizer.stop();
 			//restore the previous one
 			if (current_position!=-1){
 				previousView = gw.getChildAt(current_position);
@@ -237,10 +239,9 @@ public class GameActivity extends Activity implements RecognitionListener {
 				current_position = bundle.getInt("newPosition");
 				currentView = gw.getChildAt(current_position);
 				applyTurnRotation(current_position, 0, 180, context);
-				//stop current recognition and start a new one
-				recognizer.stop();
-				recognizer.startListening(WORD_SEARCH);
 			}
+			//start listening the current one
+			recognizer.startListening(WORD_SEARCH);
 			
 			/* without animation
 			//show the mole
@@ -290,11 +291,11 @@ public class GameActivity extends Activity implements RecognitionListener {
 					@Override
 					public void run() {
 						String curImageName = image_names[current_position].split("\\.")[0].toString().toLowerCase().trim();
-						Log.v(PS_TAG, "onPartialResult(): "+recognizedText+" vs. "+curImageName+" :"+curImageName.equals(recognizedText));
+						Log.v(PS_TAG, recognizedText+" vs. "+curImageName+" :"+curImageName.equals(recognizedText));
 						ImageView crossImage = (ImageView) currentView.findViewById(R.id.cross);
 						ImageView checkImage = (ImageView) currentView.findViewById(R.id.check);
 						//if correct
-						if (recognizedText.equals(curImageName)) {
+						if (recognizedText.contains(curImageName)) {
 							scoreCurr++;
 							scoreTview.setText("Score: " + scoreCurr);
 							scoreTview.refreshDrawableState();
@@ -386,7 +387,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 		// The animation listener is used to trigger the next animation
 		final TurnAnimation rotation = new TurnAnimation(start, end, centerX,
 				centerY, 310.0f, true);
-		rotation.setDuration(200);
+		rotation.setDuration(180);
 		rotation.setFillAfter(true);
 		rotation.setInterpolator(new AccelerateInterpolator());
 		rotation.setAnimationListener(new DisplayNextView(position, context));
@@ -464,7 +465,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 			TurnAnimation rotation;
 			rotation = new TurnAnimation(180, 0, centerX, centerY, 310.0f,
 					false);
-			rotation.setDuration(200);
+			rotation.setDuration(180);
 			rotation.setFillAfter(true);
 			rotation.setInterpolator(new DecelerateInterpolator());
 			currentView.startAnimation(rotation);
