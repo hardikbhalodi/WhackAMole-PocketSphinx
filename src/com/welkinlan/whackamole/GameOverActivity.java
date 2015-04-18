@@ -18,7 +18,6 @@ public class GameOverActivity extends Activity {
         setContentView(R.layout.gameover);    
         Button RestartGameButton = (Button)findViewById(R.id.restart);
         RestartGameButton.setOnClickListener(new OnClickListener() {
-        	
         	public void onClick(View v) {
         		Intent RestartGameIntent = new Intent(GameOverActivity.this,GameActivity.class);
         		startActivity(RestartGameIntent);
@@ -28,8 +27,8 @@ public class GameOverActivity extends Activity {
         Button QuitButton = (Button)findViewById(R.id.quit);
         QuitButton.setOnClickListener(new OnClickListener() {
         	public void onClick(View v) {
-        		int pid = android.os.Process.myPid();
-        		android.os.Process.killProcess(pid);
+        		finish();  
+		    	System.exit(0); 
         	}
         });
               
