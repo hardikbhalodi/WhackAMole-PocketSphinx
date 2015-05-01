@@ -7,7 +7,7 @@ import android.os.Message;
 public class MoleGame extends Thread {
 
 	final static public int LOWERBOUND = 0;
-	final static public int UPPERBOUND = 5;
+	final static public int UPPERBOUND = 4;
 	final static public int INTERVAL = 4000;
 
 	private int upperBound;

@@ -62,7 +62,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	TextView lifeTview;
 	static GridView gw;
 	//for image adapter
-	private static String[] image_names = {"Baby.png","Back.png","Ballerina.png","Baking.png", "Banana.png","Chair.png"};
+	private static String[] image_names = {"Saw.png","Sea.png","Sew.png","Sue.png", "Ice.png"};
 	static int current_position = -1;
 	static int holeImage = R.drawable.question;
 	private static View currentView, previousView;
@@ -145,6 +145,24 @@ public class GameActivity extends Activity implements RecognitionListener {
 		}.execute();
 
 	}
+
+	private void startGame(){
+		// set up UI
+		setContentView(R.layout.activity_game);	
+		scoreTview = (TextView) findViewById(R.id.Score);
+		lifeTview = (TextView) findViewById(R.id.Life);
+		gw = (GridView) findViewById(R.id.game_view);
+		//set up game
+		stepHandler = new ChangeImage(this);
+		updateHandler = new Handler();
+		gw.setAdapter(new ImageAdapter(this));
+		gw.setEnabled(false);
+		setAnimation();
+
+		mg = new MoleGame(stepHandler);
+		mg.start();
+
+	}
 	
 	@Override
 	public void onPause() {
@@ -179,7 +197,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 		recognizer = defaultSetup()
 				.setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
 				.setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-				.setRawLogDir(assetsDir).setKeywordThreshold(1e-15f) //threshold (larger = more accurate, fewer false alarms)
+				.setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate, fewer false alarms)
 				.getRecognizer();
 		recognizer.addListener(this);
 		// Create grammar-based searches.
@@ -189,24 +207,6 @@ public class GameActivity extends Activity implements RecognitionListener {
 		// Create keyword-based searches.
 		File wordsKeyWord = new File(modelsDir, "words/kwords.txt");
 		recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
-
-	}
-
-	private void startGame(){
-		// set up UI
-		setContentView(R.layout.activity_game);	
-		scoreTview = (TextView) findViewById(R.id.Score);
-		lifeTview = (TextView) findViewById(R.id.Life);
-		gw = (GridView) findViewById(R.id.game_view);
-		//set up game
-		stepHandler = new ChangeImage(this);
-		updateHandler = new Handler();
-		gw.setAdapter(new ImageAdapter(this));
-		gw.setEnabled(false);
-		setAnimation();
-
-		mg = new MoleGame(stepHandler);
-		mg.start();
 
 	}
 	
@@ -482,6 +482,8 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 			InputStream in = null;
 			// Log.i("filename", "img/"+image_names[mPosition]);
+			//int randomImageIndex =(int) (Math.random()*(image_names.length));
+			//String name = image_names[randomImageIndex];
 			String name = image_names[mPosition];
 			StringBuilder sb = new StringBuilder(name);
 			char c = sb.charAt(0);
