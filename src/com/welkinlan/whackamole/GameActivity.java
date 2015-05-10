@@ -303,7 +303,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 		@Override
 		public int getCount() {
-			return imageNames.length < 6 ? imageNames.length : 6;
+			return 6;
 		}
 
 		@Override

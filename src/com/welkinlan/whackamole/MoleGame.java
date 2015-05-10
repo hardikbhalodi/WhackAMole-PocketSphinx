@@ -6,7 +6,7 @@ import android.os.Message;
 
 public class MoleGame extends Thread {
 
-	final static public int LOWERBOUND = 0;
+	final static public int UPPER_BOUND = 6;
 	final static public int INTERVAL = 4000;
 
 	private int upperBound;
@@ -19,7 +19,7 @@ public class MoleGame extends Thread {
 
 	public MoleGame(Handler handler, int upperBound) {
 		super();
-		this.upperBound = upperBound > 6 ? 6 : upperBound;
+		this.upperBound = UPPER_BOUND;
 		gstate = GameState.RUNNING;
 		this.handler = handler;
 		this.timeWait = INTERVAL;
