@@ -5,7 +5,10 @@ import static edu.cmu.pocketsphinx.SpeechRecognizerSetup.defaultSetup;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
 
+import com.welkinlan.util.FileHelper;
 import com.welkinlan.util.TurnAnimation;
 
 import edu.cmu.pocketsphinx.Assets;
@@ -25,6 +28,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore.Images;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -36,7 +40,6 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
@@ -46,6 +49,7 @@ import android.widget.Toast;
 
 public class GameActivity extends Activity implements RecognitionListener {
 	private static final String PS_TAG = "PocketSphinx";
+	private static final String GA_TAG = "GameActivity";
 
 	private static Object lock = new Object();
 	private static SpeechRecognizer recognizer;
@@ -62,8 +66,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	TextView lifeTview;
 	static GridView gw;
 	//for image adapter
-	private static String[] image_names = {"Saw.png","Sea.png","Sew.png","Sue.png", "Ice.png"};
-	static int current_position = -1;
+	static int currentImagePosition = -1;
 	static int holeImage = R.drawable.question;
 	private static View currentView, previousView;
 
@@ -72,55 +75,63 @@ public class GameActivity extends Activity implements RecognitionListener {
 	private Animation scaleAnimation;
 	private AnimationSet set;
 	Animation flashAnimation;
+	
+	//file
+	File languageModelFile;
+	private static HashMap<String, Bitmap> imageMap;
+	private static String[] imageNames;
+	static int currentWordIndex = -1;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		languageModelFile = (File) getIntent().getExtras().get("file");
+		Log.v(GA_TAG, languageModelFile.getName());
 		setContentView(R.layout.loading);
 	}
 	
 	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			Dialog dialog = new AlertDialog.Builder(this)
-					.setIcon(android.R.drawable.btn_default)
-					.setTitle("Do you want to quit?")
-					.setPositiveButton("Quit",
-							new DialogInterface.OnClickListener() {
-								@Override
-								public void onClick(DialogInterface dialog,
-										int which) {
-									// TODO Auto-generated method stub
-									/*
-									android.os.Process
-											.killProcess(android.os.Process
-													.myPid());
-									System.exit(0);
-									*/
-									finish();  
-							    	System.exit(0); 
-								}
-
-							})
-					.setNegativeButton("No",
-							new DialogInterface.OnClickListener() {
-								@Override
-								public void onClick(DialogInterface dialog,
-										int which) {
-									// TODO Auto-generated method stub
-									dialog.dismiss();
-								}
-							}).create();
-			dialog.show();
-		}
-		return false;
+	public void onPause() {
+		super.onPause();  // Always call the superclass method first
+		if (recognizer!=null){
+	    	recognizer.stop();
+		}	
 	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();  // Always call the superclass method first
+		if (recognizer==null){
+			setupRecognizerTask();
+		}
+		else{
+			recognizer.stop();
+			recognizer.startListening(WORD_SEARCH);
+		}
+	}
+	
+	@Override
+	protected void onStop() {
+	    super.onStop();  // Always call the superclass method first
+	    recognizer = null;
+	    mg.stopThread();
+	}
+
 	
 	public void setupRecognizerTask(){
 		new AsyncTask<Void, Void, Exception>() {
 			@Override
 			protected Exception doInBackground(Void... params) {
 				try {
+					//load images
+					imageMap = FileHelper.getImages(languageModelFile, getApplicationContext());
+					Object[] keys = imageMap.keySet().toArray();
+					imageNames = new String[keys.length];
+					for (int i = 0; i < keys.length; i++){
+						imageNames[i] = keys[i].toString();
+						//Log.v(GA_TAG, imageNames[i]);
+					}
+					//set up recognizer
 					Assets assets = new Assets(GameActivity.this);
 					File assetDir = assets.syncAssets();
 					setupRecognizer(assetDir);
@@ -159,36 +170,9 @@ public class GameActivity extends Activity implements RecognitionListener {
 		gw.setEnabled(false);
 		setAnimation();
 
-		mg = new MoleGame(stepHandler);
+		mg = new MoleGame(stepHandler, imageNames.length);
 		mg.start();
 
-	}
-	
-	@Override
-	public void onPause() {
-		super.onPause();  // Always call the superclass method first
-		if (recognizer!=null){
-	    	recognizer.stop();
-		}	
-	}
-	
-	@Override
-	public void onResume() {
-		super.onResume();  // Always call the superclass method first
-		if (recognizer==null){
-			setupRecognizerTask();
-		}
-		else{
-			recognizer.stop();
-			recognizer.startListening(WORD_SEARCH);
-		}
-	}
-	
-	@Override
-	protected void onStop() {
-	    super.onStop();  // Always call the superclass method first
-	    recognizer = null;
-	    mg.stopThread();
 	}
 
 
@@ -197,15 +181,17 @@ public class GameActivity extends Activity implements RecognitionListener {
 		recognizer = defaultSetup()
 				.setAcousticModel(new File(modelsDir, "hmm/en-us-semi"))
 				.setDictionary(new File(modelsDir, "dict/cmu07a.dic"))
-				.setRawLogDir(assetsDir).setKeywordThreshold(1e-10f) //threshold (larger = more accurate, fewer false alarms)
+				.setRawLogDir(assetsDir).setKeywordThreshold(1e-15f) //threshold (larger = more accurate, fewer false alarms)
 				.getRecognizer();
 		recognizer.addListener(this);
+		
 		// Create grammar-based searches.
 		// File wordsGrammar = new File(modelsDir, "grammar/words.gram");
 		// recognizer.addGrammarSearch(WORD_SEARCH, wordsGrammar);
 
 		// Create keyword-based searches.
-		File wordsKeyWord = new File(modelsDir, "words/kwords.txt");
+		//File wordsKeyWord = new File(modelsDir, "words/kwords.txt");
+		File wordsKeyWord = languageModelFile;
 		recognizer.addKeywordSearch(WORD_SEARCH, wordsKeyWord);
 
 	}
@@ -264,8 +250,8 @@ public class GameActivity extends Activity implements RecognitionListener {
 			//stop the previous recognition
 			if (recognizer!=null) recognizer.stop();
 			//restore the previous one
-			if (current_position!=-1){
-				previousView = gw.getChildAt(current_position);
+			if (currentImagePosition!=-1){
+				previousView = gw.getChildAt(currentImagePosition);
 				image = (ImageView) previousView.findViewById(R.id.icon);
 				text = (TextView) previousView.findViewById(R.id.text);
 				image.setImageResource(holeImage);
@@ -275,11 +261,13 @@ public class GameActivity extends Activity implements RecognitionListener {
 				ImageView crossImage = (ImageView) currentView.findViewById(R.id.cross);
 				crossImage.setVisibility(View.INVISIBLE);
 			}
+			//generate random word
+			currentWordIndex = (int) (Math.random() * imageNames.length);
 			//update the current one
 			synchronized (lock) {
-				current_position = bundle.getInt("newPosition");
-				currentView = gw.getChildAt(current_position);
-				applyTurnRotation(current_position, 0, 180, context);
+				currentImagePosition = bundle.getInt("newPosition");
+				currentView = gw.getChildAt(currentImagePosition);
+				applyTurnRotation(currentWordIndex, 0, 180, context);
 			}
 			//start listening the current one
 			recognizer.startListening(WORD_SEARCH);
@@ -292,7 +280,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 			InputStream in = null;
 			try {
-				in = context.getAssets().open("img/" + image_names[current_position]);
+				in = context.getAssets().open("img/" + imageNames[currentImagePosition]);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -300,89 +288,9 @@ public class GameActivity extends Activity implements RecognitionListener {
 			final Bitmap bitmap = BitmapFactory.decodeStream(in);
 			// Display image and text
 			image.setImageBitmap(bitmap);
-			text.setText(image_names[current_position].split("\\.")[0].toString().toLowerCase());
+			text.setText(imageNames[currentImagePosition].split("\\.")[0].toString().toLowerCase());
 			*/
 		}
-	}
-	
-
-	/* for speech recognition */
-	@Override
-	public void onBeginningOfSpeech() {
-		// TODO Auto-generated method stub
-		//Log.v(PS_TAG, "onBeginningOfSpeech()");
-	}
-
-	@Override
-	public void onEndOfSpeech() {
-		// TODO Auto-generated method stub
-		//Log.v(PS_TAG, "onEndOfSpeech()");
-	}
-
-
-	@Override
-	public void onPartialResult(Hypothesis hypothesis) {
-		// TODO Auto-generated method stub
-		if (hypothesis != null) {
-			synchronized (lock) {
-				recognizedText = hypothesis.getHypstr().toLowerCase().trim();
-				recognizer.stop();
-				//update UI
-				updateHandler.post(new Runnable() {
-					@Override
-					public void run() {
-						String curImageName = image_names[current_position].split("\\.")[0].toString().toLowerCase().trim();
-						Log.v(PS_TAG, recognizedText+" vs. "+curImageName+" :"+curImageName.equals(recognizedText));
-						ImageView crossImage = (ImageView) currentView.findViewById(R.id.cross);
-						ImageView checkImage = (ImageView) currentView.findViewById(R.id.check);
-						//if correct
-						if (recognizedText.contains(curImageName)) {
-							scoreCurr++;
-							scoreTview.setText("Score: " + scoreCurr);
-							scoreTview.refreshDrawableState();
-							//show check mark for correct utterance
-							crossImage.setVisibility(View.INVISIBLE);
-							checkImage.setVisibility(View.VISIBLE);
-							checkImage.startAnimation(set);
-						} else {
-							//change game data
-							//show check mark for correct utterance
-							checkImage.setVisibility(View.INVISIBLE);
-							crossImage.setVisibility(View.VISIBLE);
-							crossImage.startAnimation(set);
-							lifeCurr--;
-							lifeTview.setText("Life: " + lifeCurr);
-							lifeTview.refreshDrawableState();
-							if (lifeCurr == 0) {
-								mg.stopThread();
-								Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
-								startActivity(gameOverIntent);
-								finish();									
-							}
-						}
-					}
-				});
-			}
-		}
-	}
-
-	@Override
-	public void onResult(Hypothesis hypothesis) {
-		// TODO Auto-generated method stub
-		//Log.v(PS_TAG, "onResult");
-	}
-
-	@Override
-	public void onError(Exception arg0) {
-		// TODO Auto-generated method stub
-		recognizer.removeListener(this);
-	}
-
-	@Override
-	public void onTimeout() {
-		// TODO Auto-generated method stub
-		//Log.v(PS_TAG,"onTimeout()");
-		recognizer.removeListener(this);
 	}
 	
 
@@ -395,12 +303,12 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 		@Override
 		public int getCount() {
-			return image_names.length;
+			return imageNames.length < 6 ? imageNames.length : 6;
 		}
 
 		@Override
 		public Object getItem(int position) {
-			return image_names[position];
+			return imageNames[position];
 		}
 
 		@Override
@@ -467,7 +375,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 	@SuppressLint("DefaultLocale")
 	private static final class SwapViews implements Runnable {
 		private final int mPosition;
-		private final Context mContext;;
+		private final Context mContext;
 
 		public SwapViews(int position, Context context) {
 			mPosition = position;
@@ -480,28 +388,8 @@ public class GameActivity extends Activity implements RecognitionListener {
 			TextView text = (TextView) currentView.findViewById(R.id.text);
 			text.setVisibility(View.VISIBLE);
 
-			InputStream in = null;
-			// Log.i("filename", "img/"+image_names[mPosition]);
-			//int randomImageIndex =(int) (Math.random()*(image_names.length));
-			//String name = image_names[randomImageIndex];
-			String name = image_names[mPosition];
-			StringBuilder sb = new StringBuilder(name);
-			char c = sb.charAt(0);
-			if (Character.isLowerCase(c)) {
-				sb.setCharAt(0, Character.toUpperCase(c));
-				Log.i("new_name", sb.toString());
-			}
-			try {
-				in = mContext.getAssets().open("img/" + sb.toString());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			final Bitmap bitmap = BitmapFactory.decodeStream(in);
-			// Display image and text
-			image.setImageBitmap(bitmap);
-			text.setText(image_names[mPosition].split("\\.")[0].toString()
-					.toLowerCase());
+			image.setImageBitmap(imageMap.get(imageNames[mPosition]));
+			text.setText(imageNames[mPosition].toLowerCase());
 
 			final float centerX = currentView.getWidth() / 2.0f;
 			final float centerY = currentView.getHeight() / 2.0f;
@@ -513,6 +401,125 @@ public class GameActivity extends Activity implements RecognitionListener {
 			rotation.setInterpolator(new DecelerateInterpolator());
 			currentView.startAnimation(rotation);
 		}
+	}
+	
+
+	/* for speech recognition */
+	@Override
+	public void onBeginningOfSpeech() {
+		// TODO Auto-generated method stub
+		//Log.v(PS_TAG, "onBeginningOfSpeech()");
+	}
+
+	@Override
+	public void onEndOfSpeech() {
+		// TODO Auto-generated method stub
+		//Log.v(PS_TAG, "onEndOfSpeech()");
+	}
+
+
+	@Override
+	public void onPartialResult(Hypothesis hypothesis) {
+		// TODO Auto-generated method stub
+		if (hypothesis != null) {
+			synchronized (lock) {
+				recognizedText = hypothesis.getHypstr().toLowerCase().trim();
+				recognizer.stop();
+				//update UI
+				updateHandler.post(new Runnable() {
+					@Override
+					public void run() {
+						String curWord = imageNames[currentWordIndex].toLowerCase().trim();
+						//Log.v(PS_TAG, recognizedText+" vs. "+curWord+" :"+curWord.equals(recognizedText));
+						ImageView crossImage = (ImageView) currentView.findViewById(R.id.cross);
+						ImageView checkImage = (ImageView) currentView.findViewById(R.id.check);
+						//if correct
+						if (recognizedText.contains(curWord)) {
+							scoreCurr++;
+							scoreTview.setText("Score: " + scoreCurr);
+							scoreTview.refreshDrawableState();
+							//show check mark for correct utterance
+							crossImage.setVisibility(View.INVISIBLE);
+							checkImage.setVisibility(View.VISIBLE);
+							checkImage.startAnimation(set);
+						} else {
+							//change game data
+							//show check mark for correct utterance
+							checkImage.setVisibility(View.INVISIBLE);
+							crossImage.setVisibility(View.VISIBLE);
+							crossImage.startAnimation(set);
+							lifeCurr--;
+							lifeTview.setText("Life: " + lifeCurr);
+							lifeTview.refreshDrawableState();
+							if (lifeCurr == 0) {
+								mg.stopThread();
+								Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
+								startActivity(gameOverIntent);
+								finish();									
+							}
+						}
+					}
+				});
+			}
+		}
+	}
+
+	@Override
+	public void onResult(Hypothesis hypothesis) {
+		// TODO Auto-generated method stub
+		//Log.v(PS_TAG, "onResult");
+	}
+
+	@Override
+	public void onError(Exception arg0) {
+		// TODO Auto-generated method stub
+		recognizer.removeListener(this);
+	}
+
+	@Override
+	public void onTimeout() {
+		// TODO Auto-generated method stub
+		//Log.v(PS_TAG,"onTimeout()");
+		recognizer.removeListener(this);
+	}
+	
+
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK) {
+			Dialog dialog = new AlertDialog.Builder(this)
+					.setIcon(android.R.drawable.btn_default)
+					.setTitle("Do you want to quit?")
+					.setPositiveButton("Quit",
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									// TODO Auto-generated method stub
+									/*
+									android.os.Process
+											.killProcess(android.os.Process
+													.myPid());
+									System.exit(0);
+									*/
+									finish();  
+							    	System.exit(0); 
+								}
+
+							})
+					.setNegativeButton("No",
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									// TODO Auto-generated method stub
+									dialog.dismiss();
+								}
+							}).create();
+			dialog.show();
+		}
+		return false;
 	}
 
 

@@ -6,12 +6,23 @@
     android:background="@drawable/blue_bg"
     android:screenOrientation="landscape" >
 
-    <Button
-        android:id="@+id/StartGame"
-        android:layout_width="400sp"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
+    <ListView
+        android:id="@+id/file_list"
+        android:layout_width="600sp"
+        android:layout_height="500sp"
         android:layout_centerVertical="true"
+        android:layout_marginRight="83dp"
+        android:layout_toLeftOf="@+id/start_game"
+        android:scrollbars="vertical" >
+    </ListView>
+
+    <Button
+        android:id="@+id/start_game"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="162dp"
         android:text="Start Game"
         android:textSize="40sp" />
 

@@ -7,7 +7,6 @@ import android.os.Message;
 public class MoleGame extends Thread {
 
 	final static public int LOWERBOUND = 0;
-	final static public int UPPERBOUND = 4;
 	final static public int INTERVAL = 4000;
 
 	private int upperBound;
@@ -18,12 +17,12 @@ public class MoleGame extends Thread {
 
 	private GameState gstate;
 
-	public MoleGame(Handler handler) {
+	public MoleGame(Handler handler, int upperBound) {
 		super();
-		this.upperBound = UPPERBOUND;
+		this.upperBound = upperBound > 6 ? 6 : upperBound;
 		gstate = GameState.RUNNING;
-		this.handler=handler;
-		this.timeWait=INTERVAL;
+		this.handler = handler;
+		this.timeWait = INTERVAL;
 	}
 
 	@Override
@@ -32,10 +31,10 @@ public class MoleGame extends Thread {
 		while(gstate == GameState.RUNNING) {
 			int newPosition;
 			// generate random position
-			newPosition=(int) (Math.random()*(upperBound+1));
+			newPosition = (int) (Math.random()*upperBound);
 			//set up the new position
 			nextStep(newPosition);
-			
+
 			//wait time
 			try {
 				sleep(timeWait);
@@ -45,7 +44,7 @@ public class MoleGame extends Thread {
 			} 
 		}
 	}
-	
+
 	private void nextStep(int newPosition){
 		Message msg = handler.obtainMessage();
 		Bundle b = new Bundle();
@@ -69,21 +68,21 @@ public class MoleGame extends Thread {
 	public void setState(String state) {
 		if (state.equals(GameState.RUNNING.name()))	this.gstate = GameState.RUNNING;
 		else this.gstate = GameState.STOPPED;
-			
+
 	}
-	
+
 	/**
 	 * Finish thread in clean.
 	 * */
 	public synchronized void stopThread() {
 		this.gstate = GameState.STOPPED;
-		
+
 	}
-	
+
 	public void setTimeToWait(int timeWait){
 		this.timeWait=timeWait;
-		
+
 	}
-	
+
 
 }
