@@ -1,5 +1,6 @@
 package com.welkinlan.whackamole;
 
+import com.welkinlan.util.Globals;
 import com.welkinlan.whackamole.R;
 
 import android.app.Activity;
@@ -19,8 +20,10 @@ public class GameOverActivity extends Activity {
         Button RestartGameButton = (Button)findViewById(R.id.restart);
         RestartGameButton.setOnClickListener(new OnClickListener() {
         	public void onClick(View v) {
-        		Intent RestartGameIntent = new Intent(GameOverActivity.this,GameActivity.class);
-        		startActivity(RestartGameIntent);
+        		Intent restartGameIntent = new Intent(GameOverActivity.this,GameActivity.class);
+        		restartGameIntent.putExtra("file", Globals.file); 
+        		startActivity(restartGameIntent);
+				finish();
         	}
         });
         

@@ -24,6 +24,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -56,15 +58,16 @@ public class GameActivity extends Activity implements RecognitionListener {
 	private static final String WORD_SEARCH = "words";
 	private static String recognizedText;
 	//game
-	private int scoreCurr = 0;
-	private int lifeCurr = 5;
+	private int starNum = 0;
+	private int finishNum = 10;
 	private static Handler stepHandler;
 	private static Handler updateHandler;
 	private MoleGame mg;
 	//UI
-	TextView scoreTview;
-	TextView lifeTview;
-	static GridView gw;
+	static GridView starGV;
+	static GridView imageGV;
+	private static Integer goldenStar = R.drawable.golden_star;
+	private static Integer defaultStar = R.drawable.default_star;
 	//for image adapter
 	static int currentImagePosition = -1;
 	static int holeImage = R.drawable.question;
@@ -160,14 +163,17 @@ public class GameActivity extends Activity implements RecognitionListener {
 	private void startGame(){
 		// set up UI
 		setContentView(R.layout.activity_game);	
-		scoreTview = (TextView) findViewById(R.id.Score);
-		lifeTview = (TextView) findViewById(R.id.Life);
-		gw = (GridView) findViewById(R.id.game_view);
+		imageGV = (GridView) findViewById(R.id.game_view);
+		starGV = (GridView) findViewById(R.id.starGV);
 		//set up game
 		stepHandler = new ChangeImage(this);
 		updateHandler = new Handler();
-		gw.setAdapter(new ImageAdapter(this));
-		gw.setEnabled(false);
+		imageGV.setAdapter(new ImageAdapter(this));
+		imageGV.setEnabled(false);
+		starGV.setSelector(new ColorDrawable(Color.TRANSPARENT));
+		starGV.setPersistentDrawingCache(ViewGroup.PERSISTENT_ANIMATION_CACHE);
+		starGV.setAdapter(new StarAdapter(this));
+		starGV.setEnabled(false);
 		setAnimation();
 
 		mg = new MoleGame(stepHandler, imageNames.length);
@@ -251,7 +257,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 			if (recognizer!=null) recognizer.stop();
 			//restore the previous one
 			if (currentImagePosition!=-1){
-				previousView = gw.getChildAt(currentImagePosition);
+				previousView = imageGV.getChildAt(currentImagePosition);
 				image = (ImageView) previousView.findViewById(R.id.icon);
 				text = (TextView) previousView.findViewById(R.id.text);
 				image.setImageResource(holeImage);
@@ -266,30 +272,11 @@ public class GameActivity extends Activity implements RecognitionListener {
 			//update the current one
 			synchronized (lock) {
 				currentImagePosition = bundle.getInt("newPosition");
-				currentView = gw.getChildAt(currentImagePosition);
+				currentView = imageGV.getChildAt(currentImagePosition);
 				applyTurnRotation(currentWordIndex, 0, 180, context);
 			}
 			//start listening the current one
 			recognizer.startListening(WORD_SEARCH);
-			
-			/* without animation
-			//show the mole
-			image = (ImageView) currentView.findViewById(R.id.icon);
-			text = (TextView) currentView.findViewById(R.id.text);
-			text.setVisibility(View.VISIBLE);
-
-			InputStream in = null;
-			try {
-				in = context.getAssets().open("img/" + imageNames[currentImagePosition]);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			final Bitmap bitmap = BitmapFactory.decodeStream(in);
-			// Display image and text
-			image.setImageBitmap(bitmap);
-			text.setText(imageNames[currentImagePosition].split("\\.")[0].toString().toLowerCase());
-			*/
 		}
 	}
 	
@@ -303,7 +290,7 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 		@Override
 		public int getCount() {
-			return 6;
+			return 10;
 		}
 
 		@Override
@@ -323,6 +310,44 @@ public class GameActivity extends Activity implements RecognitionListener {
 						R.layout.text_image_layout, null);
 			}
 			return convertView;
+		}
+	}
+	
+	static class StarAdapter extends BaseAdapter {
+		private Context mContext;
+
+		public StarAdapter(Context context) {
+			this.mContext = context;
+		}
+
+		@Override
+		public int getCount() {
+			return 10;
+		}
+
+		@Override
+		public Object getItem(int position) {
+			return position;
+		}
+
+		@Override
+		public long getItemId(int position) {
+			return position;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			ImageView star;
+			if (convertView == null) {
+				star = new ImageView(mContext);
+				star.setLayoutParams(new GridView.LayoutParams(80, 80));
+				star.setScaleType(ImageView.ScaleType.CENTER_CROP);
+				star.setPadding(2, 2, 2, 2);
+				star.setImageResource(defaultStar);
+			} else {
+				star = (ImageView) convertView;
+			}
+			return star;
 		}
 	}
 	
@@ -435,28 +460,27 @@ public class GameActivity extends Activity implements RecognitionListener {
 						ImageView checkImage = (ImageView) currentView.findViewById(R.id.check);
 						//if correct
 						if (recognizedText.contains(curWord)) {
-							scoreCurr++;
-							scoreTview.setText("Score: " + scoreCurr);
-							scoreTview.refreshDrawableState();
 							//show check mark for correct utterance
 							crossImage.setVisibility(View.INVISIBLE);
 							checkImage.setVisibility(View.VISIBLE);
 							checkImage.startAnimation(set);
+							//add a star
+							ImageView thisStar = (ImageView) starGV
+									.getChildAt(starNum);
+							thisStar.setImageResource(goldenStar);	
+							starNum++;
+							if (starNum == finishNum) {
+								mg.stopThread();
+								Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
+								startActivity(gameOverIntent);
+								finish();
+							}
 						} else {
 							//change game data
 							//show check mark for correct utterance
 							checkImage.setVisibility(View.INVISIBLE);
 							crossImage.setVisibility(View.VISIBLE);
 							crossImage.startAnimation(set);
-							lifeCurr--;
-							lifeTview.setText("Life: " + lifeCurr);
-							lifeTview.refreshDrawableState();
-							if (lifeCurr == 0) {
-								mg.stopThread();
-								Intent gameOverIntent = new Intent(GameActivity.this, GameOverActivity.class);
-								startActivity(gameOverIntent);
-								finish();									
-							}
 						}
 					}
 				});
@@ -528,9 +552,9 @@ public class GameActivity extends Activity implements RecognitionListener {
 
 
 /* ---------------------------------------------- DEPRECATED ---------------------------------------------------------------- 
-// gw onClickEvent handler in OnCreate()
+// imageGV onClickEvent handler in OnCreate()
 
-gw.setOnItemClickListener(new OnItemClickListener() {
+imageGV.setOnItemClickListener(new OnItemClickListener() {
 	public void onItemClick(AdapterView<?> parent, final View v,
 			int position, long id) {
 		if (currentMolePos == position) {

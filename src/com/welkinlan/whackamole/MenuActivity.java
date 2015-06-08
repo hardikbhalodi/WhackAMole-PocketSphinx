@@ -2,6 +2,7 @@ package com.welkinlan.whackamole;
 import java.io.File;
 
 import com.welkinlan.util.FileHelper;
+import com.welkinlan.util.Globals;
 import com.welkinlan.whackamole.R;
 
 import android.app.Activity;
@@ -25,7 +26,7 @@ public class MenuActivity extends Activity {
 		setContentView(R.layout.main);
 		
 		final Button startGameButton = (Button)findViewById(R.id.start_game);
-		startGameButton.setClickable(false);
+		startGameButton.setEnabled(false);
 		final ListView fileListView = (ListView)findViewById(R.id.file_list);
 		
 		//get all files
@@ -44,7 +45,8 @@ public class MenuActivity extends Activity {
 					long arg3) {
 				// TODO Auto-generated method stub
 				file = files[pos];
-				startGameButton.setClickable(true);
+				Globals.file = file;
+				startGameButton.setEnabled(true);
 			}
 		});
 		
