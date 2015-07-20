@@ -6,24 +6,36 @@
     android:background="@drawable/blue_bg"
     android:screenOrientation="landscape" >
 
+    <TextView
+        android:id="@+id/instruction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="34dp"
+        android:text="Please select an exercise and play"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textSize="50sp" />
+
+    <Button
+        android:id="@+id/start"
+        android:layout_width="200dp"
+        android:layout_height="100dp"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="163dp"
+        android:text="Start"
+        android:textSize="40sp" />
+
     <ListView
         android:id="@+id/file_list"
         android:layout_width="600sp"
         android:layout_height="500sp"
-        android:layout_centerVertical="true"
-        android:layout_marginRight="83dp"
-        android:layout_toLeftOf="@+id/start_game"
+        android:layout_below="@+id/instruction"
+        android:layout_marginRight="82dp"
+        android:layout_marginTop="28dp"
+        android:layout_toLeftOf="@+id/start"
         android:scrollbars="vertical" >
     </ListView>
-
-    <Button
-        android:id="@+id/start_game"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:layout_marginRight="162dp"
-        android:text="Start Game"
-        android:textSize="40sp" />
 
 </RelativeLayout>

@@ -22,7 +22,7 @@ public class FileHelper {
 	private final static String FH_TAG = "FileHelper";
 	
 	private File fileDir;
-	private final String dirName = "/Language_Models/";
+	private final String dirName = "/Exercises/";
 	public FileHelper() {
 		setUpFolder();
 	}
