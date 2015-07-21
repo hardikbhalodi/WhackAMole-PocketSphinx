@@ -10,6 +10,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.opengl.Visibility;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +26,12 @@ public class MenuActivity extends Activity {
     File file;
     File[] files;
     Button startGameButton;
+    ListView fileListView;
+    
+    private TextView selectedTextView  = null;
+    private RadioButton selectedRadioButton  = null;
+    int selectedIndex = -1;
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,7 +39,7 @@ public class MenuActivity extends Activity {
 
         startGameButton = (Button)findViewById(R.id.start);
         startGameButton.setEnabled(false);
-        final ListView fileListView = (ListView)findViewById(R.id.file_list);
+        fileListView = (ListView)findViewById(R.id.file_list);
 
         //get all files
         FileHelper fh = new FileHelper();
@@ -41,48 +48,51 @@ public class MenuActivity extends Activity {
         for (int i = 0; i < files.length; i++) {
             fileNames[i] = files[i].getName();
         }
-
-        ListAdapter listAdapter = new ListAdapter(MenuActivity.this , R.layout.file_list_item, fileNames);
-        fileListView.setAdapter(listAdapter);
         
-        startGameButton.setOnClickListener(new OnClickListener() {      
-            public void onClick(View v) {
-                Intent startGameIntent = new Intent(MenuActivity.this,GameActivity.class);
-                startGameIntent.putExtra("file", file); 
-                startActivity(startGameIntent);
-                finish();
-            }
-        });
+        if (fileNames.length == 0) {
+        	TextView helper = (TextView)findViewById(R.id.helper);
+        	helper.setVisibility(View.VISIBLE);
+        } else {
+            ListAdapter listAdapter = new ListAdapter(MenuActivity.this , R.layout.file_list_item, fileNames);
+            fileListView.setAdapter(listAdapter);
+            startGameButton.setOnClickListener(new OnClickListener() {      
+                public void onClick(View v) {
+                    Intent startGameIntent = new Intent(MenuActivity.this,GameActivity.class);
+                    startGameIntent.putExtra("file", file); 
+                    startActivity(startGameIntent);
+                    finish();
+                }
+            });
 
+        }
+        
     }
 
-    private RadioButton listRadioButton = null;
-    int listIndex = -1;
-
-    public void onClickRadioButton(View v) {
-        View vMain = ((View) v.getParent());
-        // getParent() must be added 'n' times, 
-        // where 'n' is the number of RadioButtons' nested parents
-        // in your case is one.
-
-        // uncheck previous checked button. 
-        if (listRadioButton != null) listRadioButton.setChecked(false);
-        // assign to the variable the new one
-        listRadioButton = (RadioButton) v;
-        // find if the new one is checked or not, and set "listIndex"
-        if (listRadioButton.isChecked()) {
-            listIndex = ((ViewGroup) vMain.getParent()).indexOfChild(vMain);
-            file = files[listIndex];
+    public void onClickListItem(View v) {
+        int newIndex = ((ViewGroup) v.getParent()).indexOfChild(v);
+        if (newIndex != selectedIndex) {
+        	if (selectedIndex != -1) {
+        		// uncheck previous checked button. 
+                selectedTextView.setBackgroundColor(0x00ffffff); //set transparent bg
+                selectedRadioButton.setChecked(false);
+        	}
+        	
+        	selectedIndex = newIndex;
+    		
+        	// select current
+            selectedTextView = (TextView) v.findViewById(R.id.textView);
+            selectedTextView.setBackgroundColor(0xff009900);//set green bg
+            selectedRadioButton = (RadioButton) v.findViewById(R.id.radioButton);
+            selectedRadioButton.setChecked(true);
+            
+            //update file
+            file = files[selectedIndex];
             Globals.file = file;
             startGameButton.setEnabled(true);
-        } else {
-            listRadioButton = null;
-            listIndex = -1;
-        }
+        } 
     }
 
     private class ListAdapter extends BaseAdapter {
-
         private Context mContext;
         private int id;
         private String[] items ;
