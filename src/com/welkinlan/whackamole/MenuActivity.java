@@ -1,3 +1,6 @@
+/*
+ * 
+ */
 package com.welkinlan.whackamole;
 import java.io.File;
 import java.util.List;
@@ -22,16 +25,36 @@ import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class MenuActivity.
+ */
 public class MenuActivity extends Activity {
+    
+    /** The file. */
     File file;
+    
+    /** The files. */
     File[] files;
+    
+    /** The start game button. */
     Button startGameButton;
+    
+    /** The file list view. */
     ListView fileListView;
     
+    /** The selected text view. */
     private TextView selectedTextView  = null;
+    
+    /** The selected radio button. */
     private RadioButton selectedRadioButton  = null;
+    
+    /** The selected index. */
     int selectedIndex = -1;
     
+    /* (non-Javadoc)
+     * @see android.app.Activity#onCreate(android.os.Bundle)
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +91,11 @@ public class MenuActivity extends Activity {
         
     }
 
+    /**
+     * On click list item.
+     *
+     * @param v the v
+     */
     public void onClickListItem(View v) {
         int newIndex = ((ViewGroup) v.getParent()).indexOfChild(v);
         if (newIndex != selectedIndex) {
@@ -92,11 +120,27 @@ public class MenuActivity extends Activity {
         } 
     }
 
+    /**
+     * The Class ListAdapter.
+     */
     private class ListAdapter extends BaseAdapter {
+        
+        /** The m context. */
         private Context mContext;
+        
+        /** The id. */
         private int id;
+        
+        /** The items. */
         private String[] items ;
 
+        /**
+         * Instantiates a new list adapter.
+         *
+         * @param context the context
+         * @param textViewResourceId the text view resource id
+         * @param list the list
+         */
         public ListAdapter(Context context, int textViewResourceId, String[] list) 
         {     
             mContext = context;
@@ -104,24 +148,36 @@ public class MenuActivity extends Activity {
             items = list;
         }
 
+        /* (non-Javadoc)
+         * @see android.widget.Adapter#getCount()
+         */
         @Override
         public int getCount() {
             // TODO Auto-generated method stub
             return items.length;
         }
 
+        /* (non-Javadoc)
+         * @see android.widget.Adapter#getItem(int)
+         */
         @Override
         public Object getItem(int position) {
             // TODO Auto-generated method stub
             return null;
         }
 
+        /* (non-Javadoc)
+         * @see android.widget.Adapter#getItemId(int)
+         */
         @Override
         public long getItemId(int position) {
             // TODO Auto-generated method stub
             return 0;
         }
 
+        /* (non-Javadoc)
+         * @see android.widget.Adapter#getView(int, android.view.View, android.view.ViewGroup)
+         */
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             // TODO Auto-generated method stub

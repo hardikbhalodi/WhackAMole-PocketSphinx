@@ -1,23 +1,52 @@
+/*
+ * 
+ */
 package com.welkinlan.util;
 
 import android.content.Context;
 import android.util.AttributeSet;
 import android.widget.RelativeLayout;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class ImageTextItem.
+ */
 public class ImageTextItem extends RelativeLayout{
-	 public ImageTextItem(Context context, AttributeSet attrs, int defStyle) {
+	 
+ 	/**
+ 	 * Instantiates a new image text item.
+ 	 *
+ 	 * @param context the context
+ 	 * @param attrs the attrs
+ 	 * @param defStyle the def style
+ 	 */
+ 	public ImageTextItem(Context context, AttributeSet attrs, int defStyle) {
 	        super(context, attrs, defStyle);
 	    }
 
-	    public ImageTextItem(Context context, AttributeSet attrs) {
+	    /**
+    	 * Instantiates a new image text item.
+    	 *
+    	 * @param context the context
+    	 * @param attrs the attrs
+    	 */
+    	public ImageTextItem(Context context, AttributeSet attrs) {
 	        super(context, attrs);
 	    }
 
-	    public ImageTextItem(Context context) {
+	    /**
+    	 * Instantiates a new image text item.
+    	 *
+    	 * @param context the context
+    	 */
+    	public ImageTextItem(Context context) {
 	        super(context);
 	    }
 
-	    @SuppressWarnings("unused")
+	    /* (non-Javadoc)
+    	 * @see android.widget.RelativeLayout#onMeasure(int, int)
+    	 */
+    	@SuppressWarnings("unused")
 	    @Override
 	    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 	        // For simple implementation, or internal size is always 0.

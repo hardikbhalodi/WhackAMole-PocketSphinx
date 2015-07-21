@@ -1,3 +1,6 @@
+/*
+ * 
+ */
 package com.welkinlan.whackamole;
 
 import com.welkinlan.util.Globals;
@@ -10,8 +13,17 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class GameOverActivity.
+ */
 public class GameOverActivity extends Activity {
-    /** Called when the activity is first created. */
+    
+    /**
+     *  Called when the activity is first created.
+     *
+     * @param savedInstanceState the saved instance state
+     */
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {

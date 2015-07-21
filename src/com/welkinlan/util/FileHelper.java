@@ -1,3 +1,6 @@
+/*
+ * 
+ */
 package com.welkinlan.util;
 
 import java.io.BufferedReader;
@@ -18,15 +21,31 @@ import android.provider.UserDictionary.Words;
 import android.util.Log;
 import android.widget.ListView;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class FileHelper.
+ */
 public class FileHelper {
+	
+	/** The Constant FH_TAG. */
 	private final static String FH_TAG = "FileHelper";
 	
+	/** The file dir. */
 	private File fileDir;
+	
+	/** The dir name. */
 	private final String dirName = "/Exercises/";
+	
+	/**
+	 * Instantiates a new file helper.
+	 */
 	public FileHelper() {
 		setUpFolder();
 	}
 
+	/**
+	 * Sets the up folder.
+	 */
 	public void setUpFolder() {
 		fileDir = new File(Environment.getExternalStorageDirectory()+ dirName);
 		if (Environment.MEDIA_MOUNTED.equals(Environment
@@ -40,10 +59,22 @@ public class FileHelper {
 		}
 	}
 
+	/**
+	 * Gets the all files.
+	 *
+	 * @return the all files
+	 */
 	public File[] getAllFiles(){
 		return fileDir.listFiles();
 	}
 
+	/**
+	 * Gets the images in the format of hashmap.
+	 *
+	 * @param file the file
+	 * @param context the context
+	 * @return the images
+	 */
 	public static HashMap<String, Bitmap> getImages(File file, Context context){
 		HashMap<String, Bitmap> imageMap = new HashMap<String, Bitmap>();
 		try {
